@@ -47,7 +47,7 @@
                                                       0 0 0 (- y1 y2))))
 
 (defun bezier-notched-rectangle (x y width height radius)
-  (let* ((p1 (make-bezier-area* (bezier-ellipsoid-4-coords x (+ y radius) 20 20)))
+  (let* ((p1 (make-bezier-area* (bezier-ellipsoid-4-coords x (+ y (/ height 2)) radius radius)))
          (p2 (make-bezier-area* (bezier-rectangle-coords x y (+ x width) (+ y height)))))
     (mcclim-bezier:region-difference p2 p1)))
 
