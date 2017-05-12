@@ -7,7 +7,14 @@
 
            #:bezier-notched-rectangle
 
-           #:draw-notched-rectangle))
+           #:draw-notched-rectangle*
+
+           #:draw-arrow-rectangle*
+           #:draw-text-rectangle*
+
+           #:draw-notched-text-rectangle*
+
+           #:draw-grid))
 
 (in-package #:bezier-shapes)
 
@@ -51,8 +58,81 @@
          (p2 (make-bezier-area* (bezier-rectangle-coords x y (+ x width) (+ y height)))))
     (mcclim-bezier:region-difference p2 p1)))
 
-(defun draw-notched-rectangle (sheet x y width height radius &key ink)
+(defun draw-notched-rectangle* (sheet x y width height radius &key ink)
   (let ((r1 (bezier-notched-rectangle x y width height radius)))
     (apply #'mcclim-bezier:draw-bezier-design* sheet r1
            (when ink
              `(:ink ,ink)))))
+
+(defun draw-notched-text-rectangle* (sheet text x y width height radius &key ink text-style)
+  (apply #'draw-notched-rectangle* sheet x y width height radius
+         (when ink
+           `(:ink ,ink)))
+  (apply #'draw-text* sheet
+         text
+         (+ x (/ radius 4) (/ width 2))
+         (+ y (/ height 2))
+         :align-x :center
+         :align-y :center
+         (when text-style
+           `(:text-style ,text-style))))
+
+(defun draw-arrow-rectangle* (sheet x1 y1 x2 y2
+                              &rest args
+                              &key filled ink (line-thickness 0) (arrow-width 0.20) (arrow-width-unit :percent)
+                                   text
+                                   (text-style (make-text-style :sans-serif :bold :normal)))
+  (declare (ignore args))
+  (let ((box-x2
+         (case arrow-width-unit
+           (:percent (- x2 (* (- x2 x1)
+                              arrow-width)))
+           (:absolute (- x2 (* (signum (- x2 x1))
+                               arrow-width))))))
+    (clim:draw-polygon* sheet (print (list x1 y1
+                                           box-x2 y1
+                                           x2 (+ y1 (/ (- y2 y1) 2))
+                                           box-x2 y2
+                                           x1 y2))
+                        :ink ink
+                        :filled filled
+                        :line-thickness line-thickness)
+    (when text
+      (multiple-value-bind (width height)
+          (text-size sheet text :text-style text-style)
+        (draw-text* sheet
+                    text
+                    (+ x1 (/ (- box-x2 x1) 2))
+                    (+ y1 (/ (- y2 y1) 2))
+                    :align-x :center
+                    :align-y :center
+                    :text-style text-style)
+        (values width height)))))
+
+(defun draw-text-rectangle* (sheet x1 y1 x2 y2
+                             &rest args
+                             &key filled ink (line-thickness 0)
+                                  text
+                                  (text-style (make-text-style :sans-serif :bold :normal)))
+  (declare (ignore args))
+  (clim:draw-rectangle* sheet x1 y1 x2 y2
+                        :ink ink
+                        :filled filled
+                        :line-thickness line-thickness)
+  (when text
+    (draw-text* sheet
+                text
+                (+ x1 (/ (- x2 x1) 2))
+                (+ y1 (/ (- y2 y1) 2))
+                :align-x :center
+                :align-y :center
+                :text-style text-style)))
+
+(defun draw-grid (sheet &key (x 300) (y 300) (x-incr 10) (y-incr 10) (line-thickness 2) (ink +black+))
+  (loop for i from 0 to x by x-incr
+     do
+       (draw-line* sheet i 0 i y :line-thickness line-thickness :ink ink))
+  (loop for i from 0 to y by y-incr
+     do
+       (draw-line* sheet 0 i x i :line-thickness line-thickness :ink ink)))
+
