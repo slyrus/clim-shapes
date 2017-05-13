@@ -1,5 +1,5 @@
 
-(defpackage #:bezier-shapes
+(defpackage #:clim-shapes
   (:use #:clim #:clim-lisp #:clim-extensions #:mcclim-bezier)
   (:export #:bezier-ellipsoid-2-coords
            #:bezier-ellipsoid-4-coords
@@ -11,12 +11,13 @@
 
            #:draw-arrow-rectangle*
            #:draw-text-rectangle*
+           #:draw-text-ellipse*
 
            #:draw-notched-text-rectangle*
 
            #:draw-grid))
 
-(in-package #:bezier-shapes)
+(in-package #:clim-shapes)
 
 (defun bezier-ellipsoid-2-coords (x y width height &key (tallness 1))
   (let ((y-factor (* height (/ tallness (sqrt 2)))))
@@ -124,6 +125,35 @@
                 text
                 (+ x1 (/ (- x2 x1) 2))
                 (+ y1 (/ (- y2 y1) 2))
+                :align-x :center
+                :align-y :center
+                :text-style text-style)))
+
+(defun remove-keyword-arg (key args)
+  (loop for (k v) on args by #'cddr
+     unless (eql key k)
+     append (list k v)))
+
+(defun draw-text-ellipse* (sheet
+                          text
+                          center-x center-y
+                          radius-1-dx radius-1-dy radius-2-dx radius-2-dy
+                          &rest args
+                          &key (filled t) (start-angle 0.0) (end-angle (* 2.0 pi))
+                               ink clipping-region transformation line-style
+                               line-thickness line-unit line-dashes line-cap-shape text-style)
+  (declare (ignore filled start-angle end-angle
+                   ink clipping-region transformation line-style
+                   line-thickness line-unit line-dashes line-cap-shape))
+  (apply #'clim:draw-ellipse*
+         sheet
+         center-x center-y
+         radius-1-dx radius-1-dy radius-2-dx radius-2-dy
+         (remove-keyword-arg :text-style args))
+  (when text
+    (draw-text* sheet
+                text
+                center-x center-y
                 :align-x :center
                 :align-y :center
                 :text-style text-style)))

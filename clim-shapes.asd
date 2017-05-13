@@ -1,6 +1,6 @@
 
-(asdf:defsystem #:bezier-shapes
+(asdf:defsystem #:clim-shapes
   :depends-on (#:mcclim #:mcclim-bezier)
   :serial t
   :components
-  ((:file "bezier-shapes")))
+  ((:file "clim-shapes")))
