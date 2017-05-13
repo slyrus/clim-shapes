@@ -166,3 +166,20 @@
      do
        (draw-line* sheet 0 i x i :line-thickness line-thickness :ink ink)))
 
+(defun draw-regular-polygon (sheet x y sides radius
+                             &rest args
+                             &key (angle 0)
+                                  (filled t) ink clipping-region
+                                  transformation line-style line-thickness
+                                  line-unit line-dashes line-joint-shape line-cap-shape)
+  (declare (ignore ink clipping-region transformation line-style line-thickness filled
+		   line-unit line-dashes line-joint-shape line-cap-shape))
+  (let* ((coords (loop for i below sides
+                    with theta1 = angle
+                    for x1 = (+ x (* radius (sin theta1)))
+                    for y1 = (+ y (* radius (cos theta1)))
+                    do (incf theta1 (/ (* 2 pi) sides))
+                    collect (list x1 y1)))
+         (points (mapcar (lambda (x) (apply #'clim:make-point x))
+                         coords)))
+    (apply #'draw-polygon sheet points (remove-keyword-arg :angle args))))
