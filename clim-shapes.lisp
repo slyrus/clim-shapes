@@ -15,7 +15,8 @@
 
            #:draw-notched-text-rectangle*
 
-           #:draw-grid))
+           #:draw-grid
+           #:draw-regular-polygon))
 
 (in-package #:clim-shapes)
 
