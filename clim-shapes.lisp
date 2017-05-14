@@ -121,6 +121,14 @@
                     (+ y1 (/ (- y2 y1) 2))
                     :align-x :center
                     :align-y :center
+(defun bezier-rounded-rectangle-coords (x1 y1 x2 y2 x-radius &optional (y-radius x-radius))
+  (relative-to-absolute-coord-seq
+   (list x1 y1 x-radius (- y-radius)
+         (- x-radius)  (- y-radius) (- x2 x1) 0 x-radius y-radius
+         x-radius (- y-radius) 0 (- y2 y1) (- x-radius) y-radius
+         x-radius y-radius (- x1 x2) 0 (- x-radius) (- y-radius)
+         (- x-radius) y-radius 0 (- y1 y2))))
+
                     :text-style text-style)
         (values width height)))))
 
