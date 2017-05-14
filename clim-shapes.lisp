@@ -59,7 +59,7 @@
           (slot-value last 'p2))
     points))
 
-(defun bezier-point-seq-to-segment-seq (point-seq)
+(defun bezier-point-seq-to-segment-seq (bezier-point-seq)
   (destructuring-bind (first last segs)
       (reduce (lambda (acc point)
                 (destructuring-bind (first-seg prev-point vec)
@@ -78,13 +78,45 @@
                               (make-instance 'mcclim-bezier::bezier-segment :p2 p2 :p3 p3))
                             point
                             vec))))
-              point-seq
+              bezier-point-seq
               :initial-value (list nil nil (make-array 4 :fill-pointer 0)))
     (setf (slot-value first 'p0) (slot-value last 'v)
           (slot-value first 'p1) (slot-value last 'q))
     (vector-push-extend first segs)
     segs))
 
+(defun point-seq-to-coord-seq (point-seq)
+  (reduce (lambda (vec p)
+            (vector-push-extend (point-x p) vec)
+            (vector-push-extend (point-y p) vec)
+            vec)
+          point-seq
+          :initial-value (make-array 4 :fill-pointer 0)))
+
+(defun bezier-point-seq-to-point-seq (bezier-point-seq)
+  (destructuring-bind (first coords)
+      (reduce (lambda (acc bezier-point)
+                (destructuring-bind (first vec)
+                    acc
+                  (with-slots (p v q)
+                      bezier-point
+                    (if (plusp (length vec))
+                        (progn
+                          (vector-push-extend p vec)
+                          (vector-push-extend v vec)
+                          (vector-push-extend q vec)
+                          (list first vec))
+                        (progn
+                          (vector-push-extend v vec)
+                          (vector-push-extend q vec)
+                          (list bezier-point vec))))))
+              bezier-point-seq
+              :initial-value (list nil (make-array 4 :fill-pointer 0)))
+    (with-slots (p v q)
+        first
+      (vector-push-extend p coords)
+      (vector-push-extend v coords))
+    coords))
 
 (defun bezier-ellipsoid-2-coords (x y width height &key (tallness 1))
   (let ((y-factor (* height (/ tallness (sqrt 2)))))
