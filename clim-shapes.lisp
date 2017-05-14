@@ -1,9 +1,15 @@
 
 (defpackage #:clim-shapes
   (:use #:clim #:clim-lisp #:clim-extensions #:mcclim-bezier)
-  (:export #:bezier-ellipsoid-2-coords
+  (:export #:bezier-point
+           #:segment-equal
+           #:bezier-point-seq
+           #:bezier-point-seq-to-segment-seq
+
+           #:bezier-ellipsoid-2-coords
            #:bezier-ellipsoid-4-coords
            #:bezier-rectangle-coords
+           #:bezier-rounded-rectangle-coords
 
            #:bezier-notched-rectangle
 
@@ -19,6 +25,66 @@
            #:draw-regular-polygon))
 
 (in-package #:clim-shapes)
+
+(defclass bezier-point ()
+  ((p :initarg :p :initform nil)
+   (v :initarg :v :initform nil)
+   (q :initarg :q :initform nil)))
+
+(defun segment-equal (a b)
+  (and (region-equal (slot-value a 'p0)
+                     (slot-value b 'p0))
+       (region-equal (slot-value a 'p1)
+                     (slot-value b 'p1))
+       (region-equal (slot-value a 'p2)
+                     (slot-value b 'p2))
+       (region-equal (slot-value a 'p3)
+                     (slot-value b 'p3))))
+
+(defun bezier-point-seq (design)
+  (destructuring-bind (last . points)
+      (reduce (lambda (acc seg)
+                (destructuring-bind (prev-seg . vec)
+                    acc
+                  (vector-push-extend
+                   (let ((p (when prev-seg (slot-value prev-seg 'p2)))
+                         (v (when seg (slot-value seg 'p0)))
+                         (q (when seg (slot-value seg 'p1))))
+                     (make-instance 'bezier-point :p p :v v :q q))
+                   vec)
+                  (cons seg vec)))
+              (segments design)
+              :initial-value (cons nil (make-array 4 :fill-pointer 0)))
+    (setf (slot-value (elt points 0) 'p)
+          (slot-value last 'p2))
+    points))
+
+(defun bezier-point-seq-to-segment-seq (point-seq)
+  (destructuring-bind (first last segs)
+      (reduce (lambda (acc point)
+                (destructuring-bind (first-seg prev-point vec)
+                    acc
+                  (if first-seg
+                      (progn (vector-push-extend
+                              (let ((p0 (when prev-point (slot-value prev-point 'v)))
+                                    (p1 (when prev-point (slot-value prev-point 'q)))
+                                    (p2 (when point (slot-value point 'p)))
+                                    (p3 (when point (slot-value point 'v))))
+                                (make-instance 'mcclim-bezier::bezier-segment :p0 p0 :p1 p1 :p2 p2 :p3 p3))
+                              vec)
+                             (list first-seg point vec))
+                      (list (let ((p2 (when point (slot-value point 'p)))
+                                  (p3 (when point (slot-value point 'v))))
+                              (make-instance 'mcclim-bezier::bezier-segment :p2 p2 :p3 p3))
+                            point
+                            vec))))
+              point-seq
+              :initial-value (list nil nil (make-array 4 :fill-pointer 0)))
+    (setf (slot-value first 'p0) (slot-value last 'v)
+          (slot-value first 'p1) (slot-value last 'q))
+    (vector-push-extend first segs)
+    segs))
+
 
 (defun bezier-ellipsoid-2-coords (x y width height &key (tallness 1))
   (let ((y-factor (* height (/ tallness (sqrt 2)))))
@@ -54,6 +120,14 @@
                                                       0 0 0 (- y2 y1) 0 0
                                                       0 0 (- x1 x2) 0 0 0
                                                       0 0 0 (- y1 y2))))
+
+(defun bezier-rounded-rectangle-coords (x1 y1 x2 y2 x-radius &optional (y-radius x-radius))
+  (relative-to-absolute-coord-seq
+   (list x1 y1 x-radius (- y-radius)
+         (- x-radius)  (- y-radius) (- x2 x1) 0 x-radius y-radius
+         x-radius (- y-radius) 0 (- y2 y1) (- x-radius) y-radius
+         x-radius y-radius (- x1 x2) 0 (- x-radius) (- y-radius)
+         (- x-radius) y-radius 0 (- y1 y2))))
 
 (defun bezier-notched-rectangle (x y width height radius)
   (let* ((p1 (make-bezier-area* (bezier-ellipsoid-4-coords x (+ y (/ height 2)) radius radius)))
@@ -121,14 +195,6 @@
                     (+ y1 (/ (- y2 y1) 2))
                     :align-x :center
                     :align-y :center
-(defun bezier-rounded-rectangle-coords (x1 y1 x2 y2 x-radius &optional (y-radius x-radius))
-  (relative-to-absolute-coord-seq
-   (list x1 y1 x-radius (- y-radius)
-         (- x-radius)  (- y-radius) (- x2 x1) 0 x-radius y-radius
-         x-radius (- y-radius) 0 (- y2 y1) (- x-radius) y-radius
-         x-radius y-radius (- x1 x2) 0 (- x-radius) (- y-radius)
-         (- x-radius) y-radius 0 (- y1 y2))))
-
                     :text-style text-style)
         (values width height)))))
 
