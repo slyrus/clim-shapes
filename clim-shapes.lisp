@@ -210,11 +210,11 @@
                               arrow-width)))
            (:absolute (- x2 (* (signum (- x2 x1))
                                arrow-width))))))
-    (clim:draw-polygon* sheet (print (list x1 y1
-                                           box-x2 y1
-                                           x2 (+ y1 (/ (- y2 y1) 2))
-                                           box-x2 y2
-                                           x1 y2))
+    (clim:draw-polygon* sheet (list x1 y1
+                                    box-x2 y1
+                                    x2 (+ y1 (/ (- y2 y1) 2))
+                                    box-x2 y2
+                                    x1 y2)
                         :ink ink
                         :filled filled
                         :line-thickness line-thickness)
