@@ -201,7 +201,7 @@
 (defun draw-arrow-rectangle* (sheet x1 y1 x2 y2
                               &rest args
                               &key filled ink (line-thickness 0) (arrow-width 0.20) (arrow-width-unit :percent)
-                                   text
+                                   text (draw-text-p t) text-color
                                    (text-style (make-text-style :sans-serif :bold :normal)))
   (declare (ignore args))
   (let ((box-x2
@@ -218,22 +218,24 @@
                         :ink ink
                         :filled filled
                         :line-thickness line-thickness)
-    (when text
+    (when (and text draw-text-p)
       (multiple-value-bind (width height)
           (text-size sheet text :text-style text-style)
-        (draw-text* sheet
-                    text
-                    (+ x1 (/ (- box-x2 x1) 2))
-                    (+ y1 (/ (- y2 y1) 2))
-                    :align-x :center
-                    :align-y :center
-                    :text-style text-style)
+        (apply #'draw-text* sheet
+               text
+               (+ x1 (/ (- box-x2 x1) 2))
+               (+ y1 (/ (- y2 y1) 2))
+               :align-x :center
+               :align-y :center
+               :text-style text-style
+               (when text-color
+                 `(:ink ,text-color)))
         (values width height)))))
 
 (defun draw-text-rectangle* (sheet x1 y1 x2 y2
                              &rest args
                              &key filled ink (line-thickness 0)
-                                  text
+                                  text text-color
                                   (text-style (make-text-style :sans-serif :bold :normal)))
   (declare (ignore args))
   (clim:draw-rectangle* sheet x1 y1 x2 y2
@@ -241,13 +243,15 @@
                         :filled filled
                         :line-thickness line-thickness)
   (when text
-    (draw-text* sheet
-                text
-                (+ x1 (/ (- x2 x1) 2))
-                (+ y1 (/ (- y2 y1) 2))
-                :align-x :center
-                :align-y :center
-                :text-style text-style)))
+    (apply #'draw-text* sheet
+           text
+           (+ x1 (/ (- x2 x1) 2))
+           (+ y1 (/ (- y2 y1) 2))
+           :align-x :center
+           :align-y :center
+           :text-style text-style
+           (when text-color
+             `(:ink ,text-color)))))
 
 (defun remove-keyword-arg (key args)
   (loop for (k v) on args by #'cddr
