@@ -198,6 +198,15 @@
          (when text-style
            `(:text-style ,text-style))))
 
+(defmacro with-filled-drawing ((&key foreground-color
+                                     background-color)
+                                     &body body)
+  `(flet ((draw-it (ink &rest args)
+           ,@(loop for form in body
+                collect `(apply #',(car form) ,@(cdr form) :ink ink args))))
+    (draw-it ,background-color :filled t)
+    (draw-it ,foreground-color)))
+
 (defun draw-arrow-rectangle* (sheet x1 y1 x2 y2
                               &rest args
                               &key filled ink (line-thickness 0) (arrow-width 0.20) (arrow-width-unit :percent)
